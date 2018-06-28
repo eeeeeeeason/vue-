@@ -26,7 +26,40 @@
 - Instance/index.js
 
   ```
-  ß111111
+  通过5个文件赋予Vue函数原型属性，并导出Vue
+  initMixin(Vue)
+  stateMixin(Vue)
+  eventsMixin(Vue)
+  lifecycleMixin(Vue)
+  renderMixin(Vue)
   ```
 
   
+
+  - initMixin的作用是初始化，绑定_init再Vue.prototype下，当我们执行new Vue()时，执行this._init(options)
+
+  - stateMixin主要包括dataDef,propsDef的set,get
+
+    ```js
+    const dataDef = {}
+      dataDef.get = function () { return this._data }
+      const propsDef = {}
+      propsDef.get = function () { return this._props }
+      if (process.env.NODE_ENV !== 'production') {
+        dataDef.set = function (newData: Object) {
+          warn(
+            'Avoid replacing instance root $data. ' +
+            'Use nested data properties instead.',
+            this
+          )
+        }
+        propsDef.set = function () {	//如果为生产环境为属性设置为只读，无法修改
+          warn(`$props is readonly.`, this)
+        }
+      }
+      Object.defineProperty(Vue.prototype, '$data', dataDef)	//$data代理了this._data
+      Object.defineProperty(Vue.prototype, '$props', propsDef)	//$props代理了this._props
+    ```
+
+    
+
