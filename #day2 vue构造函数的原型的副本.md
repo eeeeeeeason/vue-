@@ -61,5 +61,4 @@
       Object.defineProperty(Vue.prototype, '$props', propsDef)	//$props代理了this._props
     ```
 
-    
-
+    - get和set属于ES5的东西.. 简单说当你读取一个变量的时候会触发该变量的getter. 当你修改该变量时候会触发他的setter.
