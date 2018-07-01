@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        'use strict'
+        var obj = {}
+        // descriptor包括writable、enumerable、configurable
+        // 情况1.默认writable :false只读属性不可重写,enumerable: false不可枚举，即forin无法遍历,configurable: false总开关，不可重新配置
+        // Object.defineProperty(obj,'name',{
+        //     value:'zzz'
+        // })
+        // obj.name = 'abc'    //严格模式下Cannot assign to read only property 'name' of object '#<Object>'，普通模式不报错也不改值
+        
+        // -----------------------------------------
+        // 情况2.在 descriptor 中不能同时设置访问器（get 和 set）和 wriable 或 value，否则会错，就是说想用 get 和 set，就不能用 writable 或 value 中的任何一个
+        // Object.defineProperty(obj,'name', {
+        //     get:function(){
+        //         return this._name
+        //         console.log('从obj中取值')
+        //     },
+        //     set:function(name) {
+        //         this._name = name
+        //         console.log(`赋值为${name}`)
+        //     }
+        // })
+        // obj.name = 'abc'
+        // console.log(obj.name)
+        // --------------------------------------------
+        // 情况3.vue中实现只读属性就是修改了set，不给赋值
+        Object.defineProperty(obj,'name', {
+            get:function(){
+                return this._name
+                console.log('从obj中取值')
+            },
+            set:function(name) {
+                console.warn('name为只读属性')
+            }
+        })
+        obj.name = 'abc'
+        console.log(obj.name)
+    </script>
+</body>
+</html>
