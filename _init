@@ -1,0 +1,3 @@
+ -  _init函数中将传入的{el:'#app',data:{}},绑定与vm.$option,例如可以用vm.$option.el获取el;vm.$option.data获取data;
+ - data有两种状态，1为函数可以理解为当data(){return {} }为函数，调用getDATA给vm._data赋值
+ - 当我们获取值时能够用this.abc去获取到值，原因是proxy函数代理了_data，
