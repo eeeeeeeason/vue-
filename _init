@@ -1,3 +1,8 @@
  -  _init函数中将传入的{el:'#app',data:{}},绑定与vm.$option,例如可以用vm.$option.el获取el;vm.$option.data获取data;
  - data有两种状态，1为函数可以理解为当data(){return {} }为函数，调用getDATA给vm._data赋值
  - 当我们获取值时能够用this.abc去获取到值，原因是proxy函数代理了_data，
+ - $mount,compiler-only版本（entry-runtime-with-compiler.js），
+   - 首先获取了el元素，如果是dom元素就捆绑dom元素，如果是类名或者id就调用querySelector选择器，
+   - 判断是否含有options.render属性。没有的话去找_data.template,再没有的话去找dom元素中的template,获取innerHtml；或者如果只有el就从el调用getOuterHTML进行template赋值
+   - 无论是render或是template最终都会转化为render function，最后调用mount.call(this,el,hydrating)
+   - 接着调用了_update方法，设置了watcher
