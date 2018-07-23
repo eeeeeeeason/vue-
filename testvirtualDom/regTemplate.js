@@ -29,6 +29,8 @@ var attribute = new RegExp(
     '(?:\\s*(' + singleAttrAssign.source + ')' +
     '\\s*(?:' + singleAttrValues.join('|') + '))?'
 );
+
+var defaultTagRE = /\{\{((?:.|\n)+?)\}\}/g;  //匹配 {{xxxx}}
 var isUnaryTag = makeMap(   // 判断自闭合标签
     'area,base,br,col,embed,frame,hr,img,input,isindex,keygen,' +
     'link,meta,param,source,track,wbr'
@@ -52,17 +54,16 @@ function makeMap(str,
 function parseHTML(html, options) {
     var stack = [];
     var isUnaryTag$$1 = isUnaryTag;   //判断是否为自闭合标签
-    var index = 0;
+    var index = 0;  //用于记录一个标签的起始与结束位置
     var last, lastTag;    //lastTag 为了匹配结束标签 因为执行一次后 lastTag会被赋值tagName
     while (html) {
         //　　第一次进入while循环时，由于字符串以<开头，所以进入startTag条件，并进行AST转换，最后将对象弹入stack数组中
         //　　而这一次，字符串开头为{，所以会继续执行下面的代码。代码将{{message}}作为text抽离出来，并调用了参数中另外一个函数：options
         last = html;
         var textEnd = html.indexOf('<');
-        if (textEnd === 0) {     // 此时字符串是不是以<开头
-            // End tag:
+        if (textEnd === 0) {     // 此时字符串是不是以<开头，要么就是开始标签要么就是结束标签如<div><或</div>
+            // End tag:先判断是否为结束的闭合标签
             var endTagMatch = html.match(endTag);
-            debugger
             if (endTagMatch) {
                 var curIndex = index;
                 advance(endTagMatch[0].length);
@@ -73,12 +74,12 @@ function parseHTML(html, options) {
             // Start tag:    // 匹配起始标签，第一次走这里、
             var startTagMatch = parseStartTag();    //处理后得到match
             if (startTagMatch) {
-                handleStartTag(startTagMatch);
+                handleStartTag(startTagMatch);      //但match还需要格式化等获取标准格式的对象，将key和value从attrs中取出
                 continue
             }
         }
 
-        // 初始化为undefined 这样安全且字符数少一点
+        // 初始化为undefined 这样安全且字符数少一点，匹配到{{}}时触发, 除了防止被重写外，还可以减少字节。void 0代替undefined省3个字节。
         var text = (void 0), rest = (void 0), next = (void 0);
         if (textEnd >= 0) {      // 截取<字符索引 => </div> 这里截取到闭合的<
             rest = html.slice(textEnd);  //截取闭合标签
@@ -129,7 +130,7 @@ function parseHTML(html, options) {
         }
     }
 
-    function handleStartTag(match) {
+    function handleStartTag(match) {    //match = {tagName: "div", attrs: Array(1), start: 0, end: 14}
         var tagName = match.tagName;
         // var unarySlash = match.unarySlash;
         // if (expectHTML) {
@@ -140,10 +141,10 @@ function parseHTML(html, options) {
         //         parseEndTag(tagName);
         //     }
         // }
-        var unary = isUnaryTag$$1(tagName)
+        var unary = isUnaryTag$$1(tagName)  //判断是否为单标签，返回undefined或true
         var l = match.attrs.length;
         var attrs = new Array(l);
-        debugger    //TODO:7/22 EASON日志节点
+        //TODO:7/22 EASON日志节点
         for (var i = 0; i < l; i++) {
             var args = match.attrs[i];
             var value = args[3] || args[4] || args[5] || '';
@@ -152,11 +153,10 @@ function parseHTML(html, options) {
                 value: value
             };
         }
-        if (!unary) {
+        if (!unary) {   //unary判断单标签，不是的话需要记录这个标签，用于找到他的闭合标签
             stack.push({tag: tagName, lowerCasedTag: tagName.toLowerCase(), attrs: attrs});
             lastTag = tagName;
         }
-        debugger
 
         if (options.start) {
             options.start(tagName, attrs, unary, match.start, match.end);
@@ -215,12 +215,28 @@ function parseHTML(html, options) {
         }
     }
 }
-
+//　在最后，调用processAttrs对动态绑定的属性（v-,@,:）进行处理，代码如下：
+function processAttrs(el) {
+    // {name:'id',value:'app'}
+    /*获取元素属性列表*/
+    var list = el.attrsList;
+    var i, l, name, rawName, value, modifiers, isProp;
+    for (i = 0, l = list.length; i < l; i++) {
+        // 属性名
+        name = rawName = list[i].name;
+        // 属性值
+        value = list[i].value;
+        addAttr(el, name, JSON.stringify(value));        // 添加了个attrs属性  /*将属性放入ele的attr属性中*/
+    }
+}
+function addAttr(el, name, value) {
+    (el.attrs || (el.attrs = [])).push({name: name, value: value});
+}
 function parse(template) {
-    debugger
     var currentParent;
     var root;
     var stack = [];
+    debugger    
     parseHTML(template, {
         start: function start(tag, attrs, unary) {
             var element = {
@@ -254,7 +270,7 @@ function parse(template) {
             }
             // pop stack
             stack.length -= 1;
-            currentParent = stack[stack.length - 1];
+            currentParent = stack[stack.length - 1];    //匹配完闭合标签需要把父级重新设置为前一个
         },
         chars: function chars(text) {
             if (!currentParent) {   //如果没有父元素 只是文本
@@ -283,6 +299,39 @@ function parse(template) {
     })
     return root
 }
+function parseText(text,    //对Text进行解析TODO:
+    delimiters) {
+        var tagRE = delimiters ? buildRegex(delimiters) : defaultTagRE;       // 如果delimiters为false defaultTagRE 为匹配{{xxx}}的正则
+        if (!tagRE.test(text)) {        // /\{\{((?:.|\n)+?)\}\}/g 在这里调用test方法后lasatIndex会变化
+            return
+        }
+        var tokens = [];
+        var lastIndex = tagRE.lastIndex = 0;
+        var match, index;
+        // 0:"{{message}}"
+        // 1:"message"
+        // index:0
+        // input:"{{message}}"
+
+        // 匹配到中间的文本
+        while ((match = tagRE.exec(text))) {
+            index = match.index;
+            // push text token
+            // 将{{message}}之前的文本push进去
+            if (index > lastIndex) {
+            tokens.push(JSON.stringify(text.slice(lastIndex, index)));
+            }
+            // tag token
+            // 该方法对特殊字符进行处理，trim去掉左右空格
+            var exp = (match[1].trim());    
+            tokens.push(("_s(" + exp + ")"));   //tokens = ["_s(msg)"]
+            lastIndex = index + match[0].length;
+        }
+        if (lastIndex < text.length) {       // push}}后面的文本
+            tokens.push(JSON.stringify(text.slice(lastIndex)));
+        }
+        return tokens.join('+')
+    }
 function makeAttrsMap(attrs) {
     var map = {};
     for (var i = 0, l = attrs.length; i < l; i++) {
