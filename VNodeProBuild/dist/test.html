@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+  <script src="./bundle.js"> </script>
+  <script>
+    var templateNode = parse('<div id="abc" class="qqq"><p class="www">{{msg}}<button class="zzz">修改</button></p> <h2>hhhhh</h2><h3>xxx </h3></div> ')
+    modifyChild(templateNode)
+    var vnodeTree = VElement(templateNode.tag, templateNode.attrsMap, templateNode.childList)
+    var root = vnodeTree.render()
+    document.body.appendChild(root)
+  </script>
+</body>
+</html>
