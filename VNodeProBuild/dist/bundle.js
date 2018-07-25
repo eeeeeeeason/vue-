@@ -1,121 +1,3 @@
-var _ = {};
-_.type = function (obj) {
-  return Object.prototype.toString.call(obj).replace(/\[object\s|\]/g, '')
-};
-
-_.isArray = function isArray (list) {
-  return _.type(list) === 'Array'
-};
-
-_.slice = function slice (arrayLike, index) {
-  return Array.prototype.slice.call(arrayLike, index)
-};
-
-_.truthy = function truthy (value) {
-  return !!value
-};
-
-_.isString = function isString (list) {
-  return _.type(list) === 'String'
-};
-
-_.each = function each (array, fn) {
-  for (var i = 0, len = array.length; i < len; i++) {
-    fn(array[i], i);
-  }
-};
-
-_.toArray = function toArray (listLike) {
-  if (!listLike) {
-    return []
-  }
-
-  var list = [];
-
-  for (var i = 0, len = listLike.length; i < len; i++) {
-    list.push(listLike[i]);
-  }
-
-  return list
-};
-
-_.setAttr = function setAttr (node, key, value) {
-  switch (key) {
-    case 'style':
-      node.style.cssText = value;
-      break
-    case 'value':
-      var tagName = node.tagName || '';
-      tagName = tagName.toLowerCase();
-      if (
-        tagName === 'input' || tagName === 'textarea'
-      ) {
-        node.value = value;
-      } else {
-        // if it is not a input or textarea, use `setAttribute` to set
-        node.setAttribute(key, value);
-      }
-      break
-    default:
-      node.setAttribute(key, value);
-      break
-  }
-};
-
-/**
- * @param {String} tag 标签名
- * @param {Object} attrsMap 属性列表对象
- * @param {Array} children 子元素
- */
-function VElement (tag, attrsMap, children) {
-  if (!(this instanceof VElement)) {
-    return new VElement(tag, attrsMap, children)
-  }
-  // 如果第二个参数传递的是一个数组，证明没有传递属性列表，将得到的attrsMap赋值给children同时把自己制空
-  if (_.isArray(attrsMap)) {
-    children = attrsMap;
-    attrsMap = {};
-  }
-  this.tag = tag;
-  this.attrsMap = attrsMap || {};
-  this.children = children || [];
-  this.key = attrsMap     //key如何生成？TODO:
-  ? attrsMap.key
-  : void 0;
-  var count = 0;
-  // 用于计算子元素个数，不影响数据结构,猜测用于diff算法
-  _.each(this.children, function (child, i) {
-    if (child instanceof VElement) {
-      count += child.count;
-    } else {
-      children[i] = '' + child;
-    }
-    count++;
-  });
-
-  this.count = count;
-}
-
-VElement.prototype.render = function () {
-  var el = document.createElement(this.tag);
-  var attrsMap = this.attrsMap;
-
-  for (var propName in attrsMap) {
-    var propValue = attrsMap[propName];
-    debugger
-    _.setAttr(el, propName, propValue);
-  }
-
-  _.each(this.children, function (child) {
-    var childEl = (child instanceof VElement)
-      ? child.render()
-      : document.createTextNode(child);
-    el.appendChild(childEl);
-  });
-
-  return el
-};
-
 /**
  * 用于匹配template中的标签及获取属性，创建vnode eason *2018/7/22
  */
@@ -454,20 +336,177 @@ function makeAttrsMap(attrs) {
     return map
 }
 
-console.log(parse);
+var _ = {};
+_.type = function (obj) {
+  return Object.prototype.toString.call(obj).replace(/\[object\s|\]/g, '')
+};
+
+_.isArray = function isArray (list) {
+  return _.type(list) === 'Array'
+};
+
+_.slice = function slice (arrayLike, index) {
+  return Array.prototype.slice.call(arrayLike, index)
+};
+
+_.truthy = function truthy (value) {
+  return !!value
+};
+
+_.isString = function isString (list) {
+  return _.type(list) === 'String'
+};
+
+_.each = function each (array, fn) {
+  for (var i = 0, len = array.length; i < len; i++) {
+    fn(array[i], i);
+  }
+};
+
+_.toArray = function toArray (listLike) {
+  if (!listLike) {
+    return []
+  }
+
+  var list = [];
+
+  for (var i = 0, len = listLike.length; i < len; i++) {
+    list.push(listLike[i]);
+  }
+
+  return list
+};
+
+_.setAttr = function setAttr (node, key, value) {
+  switch (key) {
+    case 'style':
+      node.style.cssText = value;
+      break
+    case 'value':
+      var tagName = node.tagName || '';
+      tagName = tagName.toLowerCase();
+      if (
+        tagName === 'input' || tagName === 'textarea'
+      ) {
+        node.value = value;
+      } else {
+        // if it is not a input or textarea, use `setAttribute` to set
+        node.setAttribute(key, value);
+      }
+      break
+    default:
+      node.setAttribute(key, value);
+      break
+  }
+};
+
+/**
+ * @param {String} tag 标签名
+ * @param {Object} attrsMap 属性列表对象
+ * @param {Array} children 子元素
+ */
+function VElement (tag, attrsMap, children) {
+  if (!(this instanceof VElement)) {
+    return new VElement(tag, attrsMap, children)
+  }
+  // 如果第二个参数传递的是一个数组，证明没有传递属性列表，将得到的attrsMap赋值给children同时把自己制空
+  if (_.isArray(attrsMap)) {
+    children = attrsMap;
+    attrsMap = {};
+  }
+  this.tag = tag;
+  this.attrsMap = attrsMap || {};
+  this.children = children || [];
+  this.key = attrsMap     //key如何生成？TODO:
+  ? attrsMap.key
+  : void 0;
+  var count = 0;
+  // 用于计算子元素个数，不影响数据结构,猜测用于diff算法
+  _.each(this.children, function (child, i) {
+    if (child instanceof VElement) {
+      count += child.count;
+    } else {
+      children[i] = '' + child;
+    }
+    count++;
+  });
+
+  this.count = count;
+}
+
+VElement.prototype.render = function () {
+  var el = document.createElement(this.tag);
+  var attrsMap = this.attrsMap;
+
+  for (var propName in attrsMap) {
+    var propValue = attrsMap[propName];
+    _.setAttr(el, propName, propValue);
+  }
+
+  _.each(this.children, function (child) {
+    var childEl = (child instanceof VElement)
+      ? child.render()
+      : document.createTextNode(child);
+    el.appendChild(childEl);
+  });
+
+  return el
+};
+
+var init = {};
 // 将所有从template来的元素处理为VELEMNT
-function modifyChild (parent) {
+init.modifyEl = function modifyChild (parent) {
   if (parent.children.length>0 && !parent.text) {
     parent.childList = [];
-    _.each(parent.children,function(child,i){
+    _.each(parent.children,function(child){
       if (!child.text) {
         parent.childList.push(VElement(child.tag,child.attrsMap,modifyChild(child)));
       }
       else {
-        parent.childList.push(VElement('text',[child.text]));
+        parent.childList.push(VElement('text',[child.text]));  //TODO: 当tag不存在时使用createTextNode代替现有的VElement
       }
     });
     return parent.childList
   }
+};
+
+function initState(vm) {
+  debugger
+  const opt = vm.$options;
+  if (opt.data) {
+    initData(vm);
+  }
+  // TODO: METHODS,PROPS
 }
-console.log(modifyChild);
+function initData(vm) {
+  let data = vm.$options.data;
+  data = vm._data = typeof data ==='function'? getData(data,vm):data||{};
+}
+/**
+ * 参考原函数
+ * data () {
+ *  return {abc:123}
+ * }
+ */
+function getData (data,vm) {
+  return data.call(vm)  //指向vm并且返回vm的data,第二个参数不理解TODO:
+}
+
+let uid = 0;
+function initMixin (Eason) {
+  Eason.prototype._init = function (options) {
+    const vm = this;
+    vm.uid = uid++;
+    debugger
+    vm.$options = options;
+    initState(vm);
+  };
+}
+
+function Eason (options) {
+  console.log(options);
+  this._init(options);
+}
+initMixin(Eason);
+
+console.log(parse, init, Eason);

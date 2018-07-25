@@ -9,11 +9,20 @@
 <body>
   <script src="./bundle.js"> </script>
   <script>
-    var templateNode = parse('<div id="abc" class="qqq"><p class="www">{{msg}}<button class="zzz">修改</button></p> <h2>hhhhh</h2><h3>xxx </h3></div> ')
-    modifyChild(templateNode)
+    var templateNode = parse('<div id="abc" class="qqq"><p class="www">{{msg}}<button class="zzz">修改</button></p> <h2>{{msg1}}</h2><h3>{{msg1}}</h3></div> ')
+    init.modifyEl(templateNode)
     var vnodeTree = VElement(templateNode.tag, templateNode.attrsMap, templateNode.childList)
     var root = vnodeTree.render()
     document.body.appendChild(root)
+    var es = new Eason({
+      data: function (){
+        return {
+          msg:'123',
+          msg1:'hhh'
+        }
+      }
+    })
+    console.log(es)
   </script>
 </body>
 </html>

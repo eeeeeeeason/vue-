@@ -39,7 +39,6 @@ VElement.prototype.render = function () {
 
   for (var propName in attrsMap) {
     var propValue = attrsMap[propName]
-    debugger
     _.setAttr(el, propName, propValue)
   }
 

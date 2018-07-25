@@ -338,5 +338,4 @@ function makeAttrsMap(attrs) {
     }
     return map
 }
-
 export default parse
