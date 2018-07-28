@@ -10,8 +10,8 @@ export function stateMixin (Eason) {
   propsDef.set = function () {
     console.warn('$props is readonly')
   }
-  Object.defineProperty(Vue.prototype, '$data', dataDef); //就是$data不能直接设置，需要其他代理,具体设置方法TODO:
-  Object.defineProperty(Vue.prototype, '$props', propsDef);
+  Object.defineProperty(Eason.prototype, '$data', dataDef); //就是$data不能直接设置，需要其他代理,具体设置方法TODO:
+  Object.defineProperty(Eason.prototype, '$props', propsDef);
   // Eason.prototype.$set = set TODO:
   // Eason.prototype.$watch TODO:
 }

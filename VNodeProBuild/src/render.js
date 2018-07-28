@@ -51,7 +51,7 @@ export function installRenderHelpers (target) {
   // target._g = bindObjectListeners
 }
 
-export function nextTick (cb?: Function, ctx?: Object) {
+export function nextTick (cb, ctx) {
   let _resolve
   callbacks.push(() => {
     if (cb) {

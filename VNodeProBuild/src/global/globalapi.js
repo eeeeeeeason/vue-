@@ -1,3 +1,6 @@
+import {extend,mergeOptions} from './util.js'
+import {initExtend} from './extend.js'
+import {initAssetRegisters} from './asset.js'
 // 初始化Eason.extend,mergeOptions,defineReactive
 export function initGlobalAPI (Eason) {
   var configDef = {};
@@ -14,10 +17,10 @@ export function initGlobalAPI (Eason) {
     // warn: warn,
     extend: extend,
     mergeOptions: mergeOptions,
-    defineReactive: defineReactive
+    // defineReactive: defineReactive TODO:
   };
 
-  Eason.set = set
+  // Eason.set = set  TODO:
   // Eason.delete = del
   // Eason.nextTick = nextTick
 
@@ -32,10 +35,15 @@ export function initGlobalAPI (Eason) {
   // components with in Weex's multi-instance scenarios.
   Eason.options._base = Eason
 
-  extend(Eason.options.components, builtInComponents)
+  // extend(Eason.options.components, builtInComponents) TODO: KEEP ALIVE
 
-  initUse(Eason)
-  initMixin(Eason)
+  // initUse(Eason) TODO:use指令
+  // initMixin(Eason),换成以下直接表示
+  Eason.mixin = function (mixin) {
+    debugger
+    this.options = mergeOptions(this.options, mixin)
+    return this
+  }
   initExtend(Eason)
   initAssetRegisters(Eason)
 }

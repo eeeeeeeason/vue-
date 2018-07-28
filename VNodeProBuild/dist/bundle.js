@@ -470,6 +470,24 @@ init.modifyEl = function modifyChild (parent) {
   }
 };
 
+function stateMixin (Eason) {
+  var dataDef = {};
+  dataDef.get = function () { return this._data }; //TODO:_data从哪来。
+  var propsDef = {};
+  propsDef.get = function () { return this._props }; //TODO:
+  //TODO: process.env.NODE_ENV,搭配webpack设置环境变量
+  dataDef.set = function () {
+    console.warn('Avoid replacing instance root $data. Use nested data properties instead'); 
+  };
+  propsDef.set = function () {
+    console.warn('$props is readonly');
+  };
+  Object.defineProperty(Eason.prototype, '$data', dataDef); //就是$data不能直接设置，需要其他代理,具体设置方法TODO:
+  Object.defineProperty(Eason.prototype, '$props', propsDef);
+  // Eason.prototype.$set = set TODO:
+  // Eason.prototype.$watch TODO:
+}
+
 function initState(vm) {
   debugger
   const opt = vm.$options;
@@ -489,18 +507,440 @@ function initData(vm) {
  * }
  */
 function getData (data,vm) {
-  return data.call(vm)  //指向vm并且返回vm的data,第二个参数不理解TODO:
+  return data.call(vm,vm)  //指向vm并且返回vm的data,第二个参数不理解,去掉也不影响。。TODO:
+}
+
+// 默认父子合并TODO:若子类有值为何只返回子
+const defaultStrat = function (parentVal, childVal) {
+  return childVal === undefined
+    ? parentVal
+    : childVal
+};
+// 合并对象工具
+function extend (to, _from) {
+  for (var key in _from) {
+    to[key] = _from[key];
+  }
+  return to
+}
+// 指令从函数格式转为对象格式
+function normalizeDirectives (options) {
+  const dirs = options.directives;
+  if (dirs) {
+    for (const key in dirs) {
+      const def = dirs[key];
+      if (typeof def === 'function') {
+        dirs[key] = { bind: def, update: def };
+      }
+    }
+  }
+}
+
+//检测是否含有该属性
+const hasOwnProperty = Object.prototype.hasOwnProperty;
+function hasOwn (obj, key) {
+  debugger
+  return hasOwnProperty.call(obj, key)
+}
+
+// 根据父子组件进行合并
+function mergeOptions (
+  parent,
+  child,
+  vm
+) {
+
+// TODO:strats属性特征描述，先做个简单的，再考虑合并share/utils中的config
+const strats = config.optionMergeStrategies;
+  // TODO:检测组件命名是否合法，是否已经存在该组件名
+  // if (process.env.NODE_ENV !== 'production') {
+    // checkComponents(child);
+  // }
+
+  if (typeof child === 'function') {
+    child = child.options;
+  }
+
+  // normalizeProps(child, vm); //TODO:props 暂不处理
+  // normalizeInject(child, vm);  //TODO:inject 暂不处理
+  normalizeDirectives(child); //TODO: 难道不是传递child.options吗？
+  var extendsFrom = child.extends;
+  if (extendsFrom) {
+    parent = mergeOptions(parent, extendsFrom, vm);
+  }
+  if (child.mixins) {
+    for (var i = 0, l = child.mixins.length; i < l; i++) {
+      parent = mergeOptions(parent, child.mixins[i], vm);
+    }
+  }
+  var options = {};
+  var key;
+  for (key in parent) {
+    mergeField(key);
+  }
+  for (key in child) {
+    if (!hasOwn(parent, key)) {
+      mergeField(key);
+    }
+  }
+  function mergeField (key) {
+    var strat = strats[key] || defaultStrat;
+    options[key] = strat(parent[key], child[key], vm, key);
+  }
+  return options
 }
 
 let uid = 0;
 function initMixin (Eason) {
+  
   Eason.prototype._init = function (options) {
     const vm = this;
     vm.uid = uid++;
-    debugger
-    vm.$options = options;
+    if (options && options._isComponent) {
+      // 组件合并，动态属性合并缓慢，不需要特殊处理就单独拉出来优化
+      initInternalComponent(vm, options);
+    } else {
+      vm.$options = mergeOptions(
+        resolveConstructorOptions(vm.constructor),
+        options || {},
+        vm
+      );
+    }
     initState(vm);
   };
+}
+// TODO:
+function resolveConstructorOptions(Ctor) {
+  let options = Ctor.options;
+  if (Ctor.super) {
+    const superOptions = resolveConstructorOptions(Ctor.super);
+    const cachedSuperOptions = Ctor.superOptions;
+    if (superOptions !== cachedSuperOptions) {
+      // super option changed,
+      // need to resolve new options.
+      Ctor.superOptions = superOptions;
+      // check if there are any late-modified/attached options (#4976)
+      const modifiedOptions = resolveModifiedOptions(Ctor);
+      // update base extend options
+      if (modifiedOptions) {
+        extend(Ctor.extendOptions, modifiedOptions);
+      }
+      options = Ctor.options = mergeOptions(superOptions, Ctor.extendOptions);
+      if (options.name) {
+        options.components[options.name] = Ctor;
+      }
+    }
+  }
+  return options
+}
+
+
+function resolveModifiedOptions (Ctor) {
+  let modified;
+  const latest = Ctor.options;
+  const extended = Ctor.extendOptions;
+  const sealed = Ctor.sealedOptions;
+  for (const key in latest) {
+    if (latest[key] !== sealed[key]) {
+      if (!modified) modified = {};
+      modified[key] = dedupe(latest[key], extended[key], sealed[key]);
+    }
+  }
+  return modified
+}
+
+function dedupe (latest, extended, sealed) {
+  // compare latest and sealed to ensure lifecycle hooks won't be duplicated
+  // between merges
+  if (Array.isArray(latest)) {
+    const res = [];
+    sealed = Array.isArray(sealed) ? sealed : [sealed];
+    extended = Array.isArray(extended) ? extended : [extended];
+    for (let i = 0; i < latest.length; i++) {
+      // push original options and not sealed options to exclude duplicated options
+      if (extended.indexOf(latest[i]) >= 0 || sealed.indexOf(latest[i]) < 0) {
+        res.push(latest[i]);
+      }
+    }
+    return res
+  } else {
+    return latest
+  }
+}
+
+function lifecycleMixin (Eason) {
+  // TODO:记录vnode,hydrating 
+  Eason.prototype._update = function (vnode, hydrating) {
+    var vm = this; //TODO: this是什么,prevEl是什么,_isMounted,$el在哪里赋值,__patch__在哪里过来的传递的参数怎么使用
+    if (vm._isMounted) {
+      callHook(vm, 'beforeUpdate');
+    }
+    var prevEl = vm.$el; 
+    var prevVnode = vm._vnode; //最开始是空咯？
+    vm._vnode = vnode;
+    if (!prevVnode) {
+      // initial render
+      vm.$el = vm.__patch__(
+        vm.$el, vnode, hydrating, false /* removeOnly */,
+        vm.$options._parentElm,
+        vm.$options._refElm
+      );
+      // no need for the ref nodes after initial patch
+      // this prevents keeping a detached DOM tree in memory (#5851)
+      vm.$options._parentElm = vm.$options._refElm = null;
+    } else {
+      // updates
+      vm.$el = vm.__patch__(prevVnode, vnode);
+    }
+    if (prevEl) {
+      prevEl.__vue__ = null;
+    }
+    if (vm.$el) {
+      vm.$el.__vue__ = vm;
+    }
+    // if parent is an HOC, update its $el as well
+    if (vm.$vnode && vm.$parent && vm.$vnode === vm.$parent._vnode) {
+      vm.$parent.$el = vm.$el;
+    }
+  };
+  // Vue.prototype.$forceUpdate
+  // Vue.prototype.$destroy
+
+}
+
+let pending = false;
+
+function renderMixin (Eason) {
+  installRenderHelpers(Eason.prototype); //Eason.prototype:{$set,$emit,_update,_init....}
+  Eason.prototype.$nextTick = function (fn) {
+    return nextTick(fn, this)
+  };
+  Eason.prototype._render = function () {
+    var vm = this;
+    var ref = vm.$options;
+    var render = ref.render;
+    var _parentVnode = ref._parentVnode;    //_parentVnode不知道拿来的TODO:
+    // $slots TODO:
+    // if (process.env.NODE_ENV !== 'production') {
+    //   for (var key in vm.$slots) {
+    //     // $flow-disable-line
+    //     vm.$slots[key]._rendered = false;
+    //   }
+    // }
+    // if (_parentVnode) {
+    //   vm.$scopedSlots = _parentVnode.data.scopedSlots || emptyObject;
+    // }
+    vm.$vnode = _parentVnode;
+    var vnode;
+    vnode = render.call(vm._renderProxy, vm.$createElement);  //TODO:源码这里有个异常处理trycatch我干掉了
+    if (!(vnode instanceof VNode)) {
+      vnode = createEmptyVNode();
+    }
+    vnode.parent = _parentVnode;
+    return vnode
+  };
+}
+
+// 处理工具，用啥添加啥，先不管，TODO:
+function installRenderHelpers (target) {
+  // target._o = markOnce
+  // target._n = toNumber
+  // target._s = toString
+  // target._l = renderList
+  // target._t = renderSlot
+  // target._q = looseEqual
+  // target._i = looseIndexOf
+  // target._m = renderStatic
+  // target._f = resolveFilter
+  // target._k = checkKeyCodes
+  // target._b = bindObjectProps
+  // target._v = createTextVNode
+  // target._e = createEmptyVNode
+  // target._u = resolveScopedSlots
+  // target._g = bindObjectListeners
+}
+
+function nextTick (cb, ctx) {
+  if (!pending) {
+    pending = true;
+    if (useMacroTask) {
+      macroTimerFunc();
+    } else {
+      microTimerFunc();
+    }
+  }
+  // $flow-disable-line
+  if (!cb && typeof Promise !== 'undefined') {
+    return new Promise(resolve => {
+    })
+  }
+}
+
+function initExtend (Vue) {
+  /**
+   * Each instance constructor, including Vue, has a unique
+   * cid. This enables us to create wrapped "child
+   * constructors" for prototypal inheritance and cache them.
+   */
+  Vue.cid = 0;
+  let cid = 1;
+
+  /**
+   * Class inheritance
+   */
+  Vue.extend = function (extendOptions) {
+    extendOptions = extendOptions || {};
+    const Super = this;
+    const SuperId = Super.cid;
+    const cachedCtors = extendOptions._Ctor || (extendOptions._Ctor = {});
+    if (cachedCtors[SuperId]) {
+      return cachedCtors[SuperId]
+    }
+
+    const name = extendOptions.name || Super.options.name;
+    // 暂时不做校验
+    // if (process.env.NODE_ENV !== 'production' && name) {
+    //   validateComponentName(name)
+    // }
+
+    const Sub = function VueComponent (options) {
+      this._init(options);
+    };
+    Sub.prototype = Object.create(Super.prototype);
+    Sub.prototype.constructor = Sub;
+    Sub.cid = cid++;
+    Sub.options = mergeOptions(
+      Super.options,
+      extendOptions
+    );
+    Sub['super'] = Super;
+
+    // For props and computed properties, we define the proxy getters on
+    // the Vue instances at extension time, on the extended prototype. This
+    // avoids Object.defineProperty calls for each instance created.
+    // TODO:props,computed init暂时不处理
+    // if (Sub.options.props) {
+    //   initProps(Sub)
+    // }
+    // if (Sub.options.computed) {
+    //   initComputed(Sub)
+    // }
+
+    // allow further extension/mixin/plugin usage
+    Sub.extend = Super.extend;
+    Sub.mixin = Super.mixin;
+    Sub.use = Super.use;
+
+    // create asset registers, so extended classes
+    // can have their private assets too.
+    ASSET_TYPES.forEach(function (type) {
+      Sub[type] = Super[type];
+    });
+    // enable recursive self-lookup
+    if (name) {
+      Sub.options.components[name] = Sub;
+    }
+
+    // keep a reference to the super options at extension time.
+    // later at instantiation we can check if Super's options have
+    // been updated.
+    Sub.superOptions = Super.options;
+    Sub.extendOptions = extendOptions;
+    Sub.sealedOptions = extend({}, Sub.options);
+
+    // cache constructor
+    cachedCtors[SuperId] = Sub;
+    return Sub
+  };
+}
+
+/* @flow */
+
+function isPlainObject (obj) {
+  return _toString.call(obj) === '[object Object]'
+}
+
+const ASSET_TYPES$1 = [
+  'component',
+  'directive',
+  'filter'
+];
+
+function initAssetRegisters (Eason) {
+  /**
+   * Create asset registration methods.
+   */
+  ASSET_TYPES$1.forEach(type => {
+    Eason[type] = function (
+      id,
+      definition
+    ) {
+      if (!definition) {
+        return this.options[type + 's'][id]
+      } else {
+        /* istanbul ignore if */
+        // if (process.env.NODE_ENV !== 'production' && type === 'component') {
+        //   validateComponentName(id)
+        // }
+        if (type === 'component' && isPlainObject(definition)) {
+          definition.name = definition.name || id;
+          definition = this.options._base.extend(definition);
+        }
+        if (type === 'directive' && typeof definition === 'function') {
+          definition = { bind: definition, update: definition };
+        }
+        this.options[type + 's'][id] = definition;
+        return definition
+      }
+    };
+  });
+}
+
+// 初始化Eason.extend,mergeOptions,defineReactive
+function initGlobalAPI (Eason) {
+  var configDef = {};
+  configDef.get = function () { return config; };
+  // if (process.env.NODE_ENV !== 'production') {
+  configDef.set = function () {
+    console.warn(
+      'Do not replace the Vue.config object, set individual fields instead.'
+    );
+  };
+  // }
+  Object.defineProperty(Eason, 'config', configDef);
+  Eason.util = {
+    // warn: warn,
+    extend: extend,
+    mergeOptions: mergeOptions,
+    // defineReactive: defineReactive TODO:
+  };
+
+  // Eason.set = set  TODO:
+  // Eason.delete = del
+  // Eason.nextTick = nextTick
+
+  Eason.options = Object.create(null);
+  
+  var ASSET_TYPES = ['component','directive','filter'];
+  ASSET_TYPES.forEach(type => {
+    Eason.options[type + 's'] = Object.create(null);
+  });
+  
+  // this is used to identify the "base" constructor to extend all plain-object
+  // components with in Weex's multi-instance scenarios.
+  Eason.options._base = Eason;
+
+  // extend(Eason.options.components, builtInComponents) TODO: KEEP ALIVE
+
+  // initUse(Eason) TODO:use指令
+  // initMixin(Eason),换成以下直接表示
+  Eason.mixin = function (mixin) {
+    debugger
+    this.options = mergeOptions(this.options, mixin);
+    return this
+  };
+  initExtend(Eason);
+  initAssetRegisters(Eason);
 }
 
 function Eason (options) {
@@ -508,5 +948,9 @@ function Eason (options) {
   this._init(options);
 }
 initMixin(Eason);
+stateMixin(Eason);
+lifecycleMixin(Eason);
+renderMixin(Eason);
+initGlobalAPI(Eason);
 
 console.log(parse, init, Eason);

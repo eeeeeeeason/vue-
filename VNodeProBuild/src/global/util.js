@@ -1,4 +1,4 @@
-const strats = config.optionMergeStrategies
+
 // 默认父子合并TODO:若子类有值为何只返回子
 const defaultStrat = function (parentVal, childVal) {
   return childVal === undefined
@@ -28,6 +28,7 @@ function normalizeDirectives (options) {
 //检测是否含有该属性
 const hasOwnProperty = Object.prototype.hasOwnProperty
 export function hasOwn (obj, key) {
+  debugger
   return hasOwnProperty.call(obj, key)
 }
 
@@ -37,6 +38,9 @@ export function mergeOptions (
   child,
   vm
 ) {
+
+// TODO:strats属性特征描述，先做个简单的，再考虑合并share/utils中的config
+const strats = config.optionMergeStrategies
   // TODO:检测组件命名是否合法，是否已经存在该组件名
   // if (process.env.NODE_ENV !== 'production') {
     // checkComponents(child);
