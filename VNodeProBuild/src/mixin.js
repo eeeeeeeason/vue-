@@ -6,6 +6,8 @@ export function initMixin (Eason) {
   Eason.prototype._init = function (options) {
     const vm = this
     vm.uid = uid++
+    vm._isEason = true
+    // TODO:_isComponent来源
     if (options && options._isComponent) {
       // 组件合并，动态属性合并缓慢，不需要特殊处理就单独拉出来优化
       initInternalComponent(vm, options)
@@ -21,6 +23,7 @@ export function initMixin (Eason) {
 }
 // TODO:
 function resolveConstructorOptions(Ctor) {
+  debugger
   let options = Ctor.options
   if (Ctor.super) {
     const superOptions = resolveConstructorOptions(Ctor.super)

@@ -14,6 +14,16 @@
     var vnodeTree = VElement(templateNode.tag, templateNode.attrsMap, templateNode.childList)
     var root = vnodeTree.render()
     document.body.appendChild(root)
+    var es1 = {
+      data:function(){
+        return {
+          abc:1
+        }
+      },
+      creted:function(){
+        console.log('es1created')
+      }
+    }
     var es = new Eason({
       data: function (){
         return {
@@ -23,7 +33,8 @@
       },
       created: function () {
         console.log(123)
-      }
+      },
+      component:{es1}
     })
     console.log(es)
   </script>

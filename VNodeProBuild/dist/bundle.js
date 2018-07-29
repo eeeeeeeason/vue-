@@ -510,6 +510,7 @@ function getData (data,vm) {
   return data.call(vm,vm)  //指向vm并且返回vm的data,第二个参数不理解,去掉也不影响。。TODO:
 }
 
+var strats = {};
 // 默认父子合并TODO:若子类有值为何只返回子
 const defaultStrat = function (parentVal, childVal) {
   return childVal === undefined
@@ -551,7 +552,7 @@ function mergeOptions (
 ) {
 
 // TODO:strats属性特征描述，先做个简单的，再考虑合并share/utils中的config
-const strats = config.optionMergeStrategies;
+// const strats = config.optionMergeStrategies
   // TODO:检测组件命名是否合法，是否已经存在该组件名
   // if (process.env.NODE_ENV !== 'production') {
     // checkComponents(child);
@@ -596,6 +597,8 @@ function initMixin (Eason) {
   Eason.prototype._init = function (options) {
     const vm = this;
     vm.uid = uid++;
+    vm._isEason = true;
+    // TODO:_isComponent来源
     if (options && options._isComponent) {
       // 组件合并，动态属性合并缓慢，不需要特殊处理就单独拉出来优化
       initInternalComponent(vm, options);
@@ -611,6 +614,7 @@ function initMixin (Eason) {
 }
 // TODO:
 function resolveConstructorOptions(Ctor) {
+  debugger
   let options = Ctor.options;
   if (Ctor.super) {
     const superOptions = resolveConstructorOptions(Ctor.super);
