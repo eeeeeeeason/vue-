@@ -592,6 +592,7 @@ function mergeOptions (
 }
 
 let uid = 0;
+// 
 function initMixin (Eason) {
   
   Eason.prototype._init = function (options) {
@@ -938,6 +939,7 @@ function initGlobalAPI (Eason) {
 
   // initUse(Eason) TODO:use指令
   // initMixin(Eason),换成以下直接表示
+  // 源码中有两个InitMixin的方法。一个是为了给Vue设置mixin方法，另一个做初始化_init
   Eason.mixin = function (mixin) {
     debugger
     this.options = mergeOptions(this.options, mixin);

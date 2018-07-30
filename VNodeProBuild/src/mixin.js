@@ -12,6 +12,7 @@ export function initMixin (Eason) {
       // 组件合并，动态属性合并缓慢，不需要特殊处理就单独拉出来优化
       initInternalComponent(vm, options)
     } else {
+      // Vue.mixin_isComponent为undefined会执行，
       vm.$options = mergeOptions(
         resolveConstructorOptions(vm.constructor),
         options || {},
@@ -21,10 +22,33 @@ export function initMixin (Eason) {
     initState(vm)
   }
 }
+
+function initInternalComponent (vm, options) {
+  var opts = vm.$options = Object.create(vm.constructor.options);
+  // doing this because it's faster than dynamic enumeration.
+  var parentVnode = options._parentVnode;
+  opts.parent = options.parent;
+  opts._parentVnode = parentVnode;
+  opts._parentElm = options._parentElm;
+  opts._refElm = options._refElm;
+
+  var vnodeComponentOptions = parentVnode.componentOptions;
+  opts.propsData = vnodeComponentOptions.propsData;
+  opts._parentListeners = vnodeComponentOptions.listeners;
+  opts._renderChildren = vnodeComponentOptions.children;
+  opts._componentTag = vnodeComponentOptions.tag;
+
+  if (options.render) {
+    opts.render = options.render;
+    opts.staticRenderFns = options.staticRenderFns;
+  }
+}
+
 // TODO:
 function resolveConstructorOptions(Ctor) {
   debugger
   let options = Ctor.options
+  // 猜测super是从Vue.extend中获取得到的
   if (Ctor.super) {
     const superOptions = resolveConstructorOptions(Ctor.super)
     const cachedSuperOptions = Ctor.superOptions
