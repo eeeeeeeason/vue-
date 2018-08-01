@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+  <script>
+  let hero = {health:3000,iq:150}
+  let val = 3000
+  function defineReative (obj,key,val) {
+      Object.defineProperty(obj,key,{
+          get(){
+            console.log(`${key}被读取了`)
+            return val
+          },
+          set(newval){
+            val = newval
+            console.log(`${key}被设置了为${val}`)
+          }
+      }) 
+  }
+  function observable(obj){
+      const keys = Object.keys(obj)
+      keys.forEach((key)=>{
+        defineReative(obj,key,obj[key])
+      })
+      return obj
+  }
+  console.log(hero)
+  debugger
+  console.log(observable(hero))
+  </script>
+</body>
+</html>
