@@ -15,7 +15,7 @@ export function watcher (obj,key,cb) {
     get () {
       Dep.target = onDepUpdated
       const val = cb()
-      // 制空避免收集
+      // 制空，避免影响其他依赖
       Dep.target = null
       return val
     },
@@ -25,7 +25,7 @@ export function watcher (obj,key,cb) {
   })
 }
 
-// 监听并执行依赖得到结果
+// 监听并执行依赖得到结果,通常在此做渲染处理
 export function onComputedUpdate (val) {
   console.log(`处理结果为${val}`)
 }

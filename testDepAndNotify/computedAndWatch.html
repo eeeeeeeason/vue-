@@ -4,9 +4,40 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>Document</title>
+  <title>计算属性</title>
 </head>
 <body>
+  <div>applePrice:$<span id="applePrice"></span><span id="addApple">+</span></div>
+  <div>orangePrice:$<span id="orangePrice"></span></div>
+  <div>totalPrice:$<span id="totalPrice"></span></div>
+
   <script src="./bundle.js"></script>
+  <script>
+  console.log(computedDataFunc)
+  // 观察一个购物车对象，实现总价实时监听各个商品价格
+  let shopCart = {applePrice:9,orangePrice:15}
+  // 观察购物车内的属性
+  let beenWatchCart = computedDataFunc.observable(shopCart)
+  // 观察属性更新时执行watch或者computed获取最新总价
+  computedDataFunc.watcher(beenWatchCart,'totalPrice',()=>{
+    document.querySelector('#totalPrice').innerHTML = (shopCart.applePrice + shopCart.orangePrice)
+    return shopCart.applePrice + shopCart.orangePrice
+  })
+  /*
+  * 设置完毕观察属性。取出shopCart中的值进行渲染。源码中为vnode,这里暂时分离,渲染先用蠢办法
+  * 取值时会触发相应的依赖收集
+  */
+  // 根据最终需要得到的属性收集他的依赖
+  document.querySelector('#totalPrice').innerHTML = beenWatchCart.totalPrice
+  document.querySelector('#applePrice').innerHTML = beenWatchCart.applePrice
+  document.querySelector('#orangePrice').innerHTML = beenWatchCart.orangePrice
+  /**
+   * 修改时触发依赖释放，将读取时收集的依赖全部执行
+   */
+  document.querySelector('#addApple').onclick = function (){
+    beenWatchCart.applePrice+=9
+    document.querySelector('#applePrice').innerHTML = beenWatchCart.applePrice
+  }
+  </script>
 </body>
 </html>

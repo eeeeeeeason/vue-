@@ -1,4 +1,4 @@
-(function () {
+var computedDataFunc = (function () {
   'use strict';
 
   // dep用于储存computed和watch属性的回调，在观察的属性值发生变化时取出进行处理
@@ -76,11 +76,17 @@
     return obj
   }
 
-  let shopCart = {applePrice:9,orangePrice:15};
-  observable(shopCart);
-  // 执行总价
-  watcher('shopCart','totalPrice',()=>{
-    return shopCart.applePrice + shopCart.orangePrice
-  });
+  // let shopCart = {applePrice:9,orangePrice:15}
+  // observable(shopCart)
+  // // 执行总价
+  // watcher('shopCart','totalPrice',()=>{
+  //   return shopCart.applePrice + shopCart.orangePrice
+  // })
+
+  let ObData = {};
+  ObData.observable = observable;
+  ObData.watcher = watcher;
+
+  return ObData;
 
 }());
