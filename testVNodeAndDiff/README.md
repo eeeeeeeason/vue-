@@ -1,3 +1,6 @@
 - vdom是什么，作用是什么
 - vdom核心api是什么
 - diff算法（讲大概）
+- 终于知道为什么createElement函数要缩写成h函数、参考snabbdom。
+- dom结构与vnode对比如下
+  - 
