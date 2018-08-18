@@ -2,6 +2,10 @@
   - MVVM理解，跟MVC区别
     - Model View Controller,一般是用户操作view视图按钮，触发controller内方法，cotroller修改model数据，model通知view，算是后端开发的主流思想
     - vue中template为View, data对象为Model,new Vue({el,data,methods})为ViewModel，连接视图view与data，view通过DOMlistenser事件'on'绑定来操作model,model通过数据绑定dataBinding操作view
+  - MVVM 实现三要素
+    - 如何监听变化，实现响应式
+    - 视图模板解析，模板引擎
+    - dom如何生成的，如何在监听变化后渲染
   - 数据，视图层是否分离
     - vue中，proxy代理_data数据，并且不允许直接修改。template为视图
     - 不分离背离了开放封闭的原则，不利于维护，功能扩展
