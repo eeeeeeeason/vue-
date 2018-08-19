@@ -1,1 +1,0 @@
-带compiler的vue-cli在dist目录中的esm.js写入debugger即可断点单步进行可知运行状况，也可随时console.log打印内容
