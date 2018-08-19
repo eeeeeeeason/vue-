@@ -3,10 +3,10 @@
     - Model View Controller,一般是用户操作view视图按钮，触发controller内方法，cotroller修改model数据，model通知view，算是后端开发的主流思想
     - vue中template为View, data对象为Model,new Vue({el,data,methods})为ViewModel，连接视图view与data，view通过DOMlistenser事件'on'绑定来操作model,model通过数据绑定dataBinding操作view
     - 数据，视图层是否分离
-     - vue中，proxy代理_data数据，并且不允许直接修改。template为视图
-     - 不分离背离了开放封闭的原则，不利于维护，功能扩展
-   - 以数据驱动视图
-     - 只修改数据，就会触发封装好的dom操作。不需要手动进行dom操作
+      - vue中，proxy代理_data数据，并且不允许直接修改。template为视图
+      - 不分离背离了开放封闭的原则，不利于维护，功能扩展
+    - 以数据驱动视图
+      - 只修改数据，就会触发封装好的dom操作。不需要手动进行dom操作
   - MVVM 实现三要素
     - 如何监听变化，实现响应式
       - Object.defineProperty设置get,set监听data变化
